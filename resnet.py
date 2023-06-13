@@ -95,10 +95,11 @@ class ResNet(nn.Module):
 
         self.net = nn.Sequential(
             # Stem.
-            nn.Conv2d(in_channels=C, out_channels=stem_chan, kernel_size=7, stride=2, padding=3),
+            # nn.Conv2d(in_channels=C, out_channels=stem_chan, kernel_size=7, stride=2, padding=3),
+            nn.Conv2d(in_channels=C, out_channels=stem_chan, kernel_size=3, padding="same"),
             PositionalNorm(stem_chan),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1), # (H, W) => (H//2, W//2)
 
             # Body.
             body,
@@ -113,14 +114,22 @@ class ResNet(nn.Module):
         return self.net(x)
 
 
-# Default ResNet model for CIFAR-10.
+# Default ResNet models for CIFAR-10.
 ResNet_18 = ResNet(
     in_shape=(3, 32, 32),
     config = {
-        "stem_chan" : 64,
+        "stem_chan": 64,
         "modules": [(2, 64), (2, 128), (2, 256), (2, 512)],
         "out_classes": 10,
     },
 )
 
+ResNet_34 = ResNet(
+    in_shape=(3, 32, 32),
+    config = {
+        "stem_chan": 64,
+        "modules": [(3, 64), (4, 128), (6, 256), (3, 512)],
+        "out_classes": 10,
+    },
+)
 #
