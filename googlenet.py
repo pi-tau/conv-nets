@@ -79,26 +79,26 @@ class InceptionBlock(nn.Module):
         return torch.cat([out_1x1, out_3x3, out_5x5, out_max_pool], dim=1)
 
 
-
 class GoogLeNet(nn.Module):
     """GoogLeNet as described in https://arxiv.org/abs/1409.4842"""
 
-    def __init__(self, in_shape, config=None):
+    def __init__(self, in_shape, config):
         """Init a GoogLeNet model.
 
         Args:
             in_shape: tuple(int)
                 The shape of the input tensors. Images should be reshaped
                 channels first, i.e. input_shape = (C, H ,W).
-            config: dict, optional
+            config: dict
                 Dictionary with configuration parameters, containing:
                 stem_chan: int
                     Number of feature channels in the stem of the model.
-                gr1: dict
-                gr2: dict
-                gr3: dict
-                    Configuration parameters for the Inception blocks in
-                    groups 1, 2 and 3 respectively, containing:
+                groups: list(dict)
+                    A list of dictionaries. Each dictionary specifies the
+                    configuration parameters for the Inception blocks in the
+                    given group, containing:
+                    num_blocks: int
+                        Number of residual blocks in the group.
                     reduce_chan: dict
                         A dictionary with keys "3x3" and "5x5" specifying the
                         dimensionality reduction for the respective branches.
@@ -109,85 +109,87 @@ class GoogLeNet(nn.Module):
                     Number of output classes.
         """
         super().__init__()
-
-        # Default configuration.
-        if config is None:
-            config = {
-                "stem_chan": 64,
-                "gr1": {
-                    "reduce_chan": {"3x3": 32, "5x5": 16},
-                    "out_chan":    {"1x1": 16, "3x3": 32, "5x5":8, "max":8},
-                },
-                "gr2": {
-                    "reduce_chan": {"3x3": 32, "5x5": 16},
-                    "out_chan":    {"1x1": 24, "3x3": 48, "5x5":12, "max":12},
-                },
-                "gr3": {
-                    "reduce_chan": {"3x3": 48, "5x5": 16},
-                    "out_chan":    {"1x1": 32, "3x3": 64, "5x5":16, "max":16},
-                },
-                "out_classes": 10,
-            }
-
         C, H, W = in_shape
         stem_chan = config["stem_chan"]
-        gr1_chan = sum(v for v in config["gr1"]["out_chan"].values())
-        gr2_chan = sum(v for v in config["gr2"]["out_chan"].values())
-        gr3_chan = sum(v for v in config["gr3"]["out_chan"].values())
+        groups = config["groups"]
         out_classes = config["out_classes"]
+
+        # The body consists of stacking inception blocks, arranged into groups
+        # with max-pooling layers in between to reduce the dimensionality of the
+        # input (always halved).
+        # The original GoogLeNet uses different configurations for each and
+        # every inception block. Here for brevity we will use the same
+        # configuration throughout a given group.
+        body = []
+        in_chan = stem_chan
+        for cfg in groups:
+            gr_chan = sum(v for v in cfg["out_chan"].values())
+            body.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1)) # (H, W) => (H//2, W//2)
+            body.append(InceptionBlock(in_chan, cfg["reduce_chan"], cfg["out_chan"]))
+            body.extend([
+                InceptionBlock(gr_chan, cfg["reduce_chan"], cfg["out_chan"])
+                for _ in range(cfg["num_blocks"]-1)
+            ])
+            in_chan = gr_chan
+        body = nn.Sequential(*body)
 
         # The GoogLeNet architecture consists of stacking multiple Inception
         # blocks with occasional max pooling to reduce the height and the width
         # of the feature maps. It exhibits a clear distinction among the stem
         # (data ingest), body (data processing), and head (prediction).
         self.net = nn.Sequential(
-            # # Stem. The stem is similar to a regular conv net.
+            # Stem. The stem is similar to a regular conv net and consists of two
+            # convolutional layers. The first layer in the original GoogLeNet is
+            # a `7x7` convolutional layer with `stride=2`, which results in
+            # down-sampling the input. Here, however, we will use a simple `3x3`
+            # convolution.
             # nn.Conv2d(in_channels=C, out_channels=stem_chan, kernel_size=7, stride=2, padding=3),
-            # PositionalNorm(stem_chan),
-            # nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            # nn.Conv2d(in_channels=stem_chan, out_channels=stem_chan, kernel_size=1),
-            # PositionalNorm(stem_chan),
-            # nn.ReLU(),
-            # nn.Conv2d(in_channels=stem_chan, out_channels=stem_chan, kernel_size=3, padding="same"),
-            # PositionalNorm(stem_chan),
-            # nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-
-            # Stem for CIFAR-10.
             nn.Conv2d(in_channels=C, out_channels=stem_chan, kernel_size=3, padding="same"),
             PositionalNorm(stem_chan),
             nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=3, stride=2, padding=1), # not needed for CIFAR-10
+            nn.Conv2d(in_channels=stem_chan, out_channels=stem_chan, kernel_size=1),
+            PositionalNorm(stem_chan),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=stem_chan, out_channels=stem_chan, kernel_size=3, padding="same"),
+            PositionalNorm(stem_chan),
+            nn.ReLU(),
 
-            # Body. The body consists of stacking a total of nine inception blocks,
-            # arranged into three groups with max-pooling layer in between to
-            # reduce the dimensionality of the input (always halved).
-            # The original GoogLeNet uses different configurations for each and
-            # every inception block. Here for brevity we will use the same
-            # configuration throughout a given group.
-            # Group 1.
-            InceptionBlock(in_chan=stem_chan, **config["gr1"]),
-            InceptionBlock(in_chan=gr1_chan, **config["gr1"]),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            # Group 2.
-            InceptionBlock(in_chan=gr1_chan, **config["gr2"]),
-            InceptionBlock(in_chan=gr2_chan, **config["gr2"]),
-            InceptionBlock(in_chan=gr2_chan, **config["gr2"]),
-            InceptionBlock(in_chan=gr2_chan, **config["gr2"]),
-            InceptionBlock(in_chan=gr2_chan, **config["gr2"]),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-            # Group 3.
-            InceptionBlock(in_chan=gr2_chan, **config["gr3"]),
-            InceptionBlock(in_chan=gr3_chan, **config["gr3"]),
+            # Body.
+            body,
 
             # Head. The head uses a global average pooling layer to change the
             # height and width of each channel to 1, just as in NiN. Finally, a
             # fully-connected layers is applied to produce the class logits.
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
-            nn.Linear(in_features=gr3_chan, out_features=out_classes),
+            nn.Linear(in_features=gr_chan, out_features=out_classes),
         )
 
     def forward(self, x):
         return self.net(x)
+
+
+# Default GoogLeNet model for CIFAR-10.
+GoogLeNet_CIFAR10 = GoogLeNet(
+    in_shape=(3, 32, 32),
+    config = {
+        "stem_chan": 64,
+        "groups": [{
+            "num_blocks": 2,
+            "reduce_chan": {"3x3": 32, "5x5": 16},
+            "out_chan":    {"1x1": 16, "3x3": 32, "5x5":8, "max":8},
+        }, {
+            "num_blocks": 5,
+            "reduce_chan": {"3x3": 32, "5x5": 16},
+            "out_chan":    {"1x1": 24, "3x3": 48, "5x5":12, "max":12},
+        }, {
+            "num_blocks": 2,
+            "reduce_chan": {"3x3": 48, "5x5": 16},
+            "out_chan":    {"1x1": 32, "3x3": 64, "5x5":16, "max":16},
+        }],
+        "out_classes": 10,
+    },
+)
+
 #

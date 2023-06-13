@@ -48,14 +48,14 @@ class ResidualBlock(nn.Module):
 class ResNet(nn.Module):
     """ResNet-18 as described in https://arxiv.org/abs/1512.03385"""
 
-    def __init__(self, in_shape, config=None):
+    def __init__(self, in_shape, config):
         """Init a ResNet model.
 
         Args:
             in_shape: tuple(int)
                 The shape of the input tensors. Images should be reshaped
                 channels first, i.e. input_shape = (C, H ,W).
-            config: dict, optional
+            config: dict
                 Dictionary with configuration parameters, containing:
                 stem_chan: int
                     Number of feature channels in the stem of the model.
@@ -69,15 +69,6 @@ class ResNet(nn.Module):
                     Number of output classes.
         """
         super().__init__()
-
-        # Default configuration.
-        if config is None:
-            config = {
-                "stem_chan" : 64,
-                "modules": [(2, 64), (2, 128), (2, 256), (2, 512)],
-                "out_classes": 10,
-            }
-
         C, H, W = in_shape
         stem_chan = config["stem_chan"]
         modules = config["modules"]
@@ -120,5 +111,16 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         return self.net(x)
+
+
+# Default ResNet model for CIFAR-10.
+ResNet_18 = ResNet(
+    in_shape=(3, 32, 32),
+    config = {
+        "stem_chan" : 64,
+        "modules": [(2, 64), (2, 128), (2, 256), (2, 512)],
+        "out_classes": 10,
+    },
+)
 
 #
