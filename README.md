@@ -54,3 +54,53 @@ added to the total loss of the network with a discount weight (`w=0.3`). These
 tricks to stabilize training are no longer necessary due to the availability of
 improved algorithms.
 
+
+## RESNET
+ResNet won the ImageNet Large Scale Visual Recognition Challenge in 2015.
+The architecture of the model is presented in:
+  * *Deep residual learning for image recognition" by He et. al.,
+  ([here]https://arxiv.org/abs/1512.03385)
+
+The problem that the authors of the ResNet model were trying to solve was how
+can we design deeper networks such that adding layers makes the network strictly
+more expressive rather than just different. Let $\mathcal{F}$ be the class of
+functions that a specific network architecture can reach, and $\mathcal{F}'$ be
+the class of functions that a deeper, more powerful architecture can reach. We
+are guaranteed that the expressive power of the network increases, only if the
+function class of the smaller network is contained in the function class of the
+larger network ($\mathcal{F} \in \mathcal{F}'$).
+
+!["Residual classes"](img/residual_classes.png)
+
+Assuming we extend the model architecture with one more layer, then if we can
+train this newly-added layer into an identity function `f(x) = x`, the new
+function class will contain the old one. At the heart of the proposed residual
+network (ResNet) is the idea that every additional layer should easily contain
+the identity function as one of the elements of its class of functions. Instead
+of modelling the new layer as `f(x)` we will model it as `f(x) = g(x) + x`. If
+the identity mapping is the desired underlying function, then the residual
+mapping amounts to `g(x) = 0` and it is thus easier to learn.
+
+The residual block models the residual function `g(x)` using two `3x3`
+convolutional layers with the same number of output channels. Each convolutional
+layer is followed by a normalization layer and a ReLU activation function. The
+input is added to the residual directly before the final ReLU activation
+function. Note that this design requires that the output of the two convolutional
+layers has to be of the same shape as the input, so that they can be added
+together. Changing the number of channels is done by introducing an additional
+`1x1` convolutional layer to transform the input into the desired shape.
+
+!["Residual block"](img/residual_block.png)
+
+The design of the ResNet follows the stem, body, head layout of GoogLeNet. The
+body uses four modules made up of residual blocks. The first module consists for
+two stacked residual blocks. The next three modules have the following structure:
+first a residual block that doubles the channels and halves the spatial dimensions,
+and then a normal residual block. Reduction of the spatial dimensions is done
+using strides in the convolution. There are 4 convolutional layers in each module
+(excluding the `1x1` convolutional layers). Together with the first convolutional
+layer and the final fully-connected layer, there are 18 layers in total, hence
+the name ResNet-18.
+
+!["ResNet-18"](img/residual_network.png)
+
