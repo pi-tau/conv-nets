@@ -115,6 +115,15 @@ class ResNet(nn.Module):
 
 
 # Default ResNet models for CIFAR-10.
+ResNet_CIFAR10 = ResNet(
+    in_shape=(3, 32, 32),
+    config= {
+        "stem_chan": 64,
+        "modules": [(3, 16), (3, 32), (3, 64)],
+        "out_classes": 10,
+    }
+)
+
 ResNet_18 = ResNet(
     in_shape=(3, 32, 32),
     config = {
