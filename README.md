@@ -4,7 +4,7 @@
 GoogLeNet won the ImageNet Challenge in 2014. The architecture of the model is
 presented in:
   * *Going deeper with convolutions* by Szegedy et. al.,
-  ([here]https://arxiv.org/abs/1409.4842)
+  ([here](https://arxiv.org/abs/1409.4842))
 
 Instead of trying to identify which convolution, ranging from `1x1` to `11x11`,
 would be best, this model simply concatenates multi-branch convolutions. An
@@ -59,7 +59,7 @@ improved algorithms.
 ResNet won the ImageNet Large Scale Visual Recognition Challenge in 2015.
 The architecture of the model is presented in:
   * *Deep residual learning for image recognition" by He et. al.,
-  ([here]https://arxiv.org/abs/1512.03385)
+  ([here](https://arxiv.org/abs/1512.03385))
 
 The problem that the authors of the ResNet model were trying to solve was how
 can we design deeper networks such that adding layers makes the network strictly
@@ -93,7 +93,7 @@ together. Changing the number of channels is done by introducing an additional
 !["Residual block"](img/residual_block.png)
 
 The design of the ResNet follows the stem, body, head layout of GoogLeNet. The
-body uses four modules made up of residual blocks. The first module consists for
+body uses four modules made up of residual blocks. The first module consists of
 two stacked residual blocks. The next three modules have the following structure:
 first a residual block that doubles the channels and halves the spatial dimensions,
 and then a normal residual block. Reduction of the spatial dimensions is done
@@ -104,3 +104,21 @@ the name ResNet-18.
 
 !["ResNet-18"](img/residual_network.png)
 
+
+## DENSENET
+The architecture of the DenseNet model is presented in:
+  * *Densely connected convolutional networks" by Huang et. al.,
+  ([here](https://arxiv.org/abs/1608.06993))
+
+DenseNets also make use of residual connections, however, instead of adding the
+output of the residual and the input, dense networks simply concatenate them.
+A dense block consists of multiple convolutional layers in a sequence. In the
+forward pass the input and the output of each layer are concatenated along the
+channel dimension before passing on to the next layer.
+
+!["Dense Block"](img/dense_block.png)
+
+Since the number of channels is continuously increasing due to the concatenation,
+adding too many layers in the block would lead to an excessively large model.
+Thus, a transition layer is placed between dense blocks and is responsible for
+reducing the dimensionality of the input.
