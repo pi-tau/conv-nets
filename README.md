@@ -46,7 +46,7 @@ in the design of deep networks.
 !["GoogLeNet"](img/googlenet.png)
 
 The original design also included auxiliary classifiers (small neural nets)
-connected to intermediate layers (first and fifth layer of the five layer block)
+connected to intermediate layers (first and fifth block of the five layer module)
 in order to stabilize training. By adding these auxiliary classifiers,
 the authors state that they increase the gradient signal that gets propagated
 back and also provide additional regularization. During training their loss gets

@@ -10,3 +10,6 @@ datasets
 
 # trash folder for storing random files
 trash
+
+# logs folder stores logging info and checkpoints from training
+logs
