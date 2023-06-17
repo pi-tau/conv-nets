@@ -122,3 +122,29 @@ Since the number of channels is continuously increasing due to the concatenation
 adding too many layers in the block would lead to an excessively large model.
 Thus, a transition layer is placed between dense blocks and is responsible for
 reducing the dimensionality of the input.
+
+
+## MODEL COMPARISON ON CIFAR10
+We will train and evaluate the models on the CIFAR10 dataset in order to compare
+their performance. Note that these models were originally designed for solving
+the ImageNet (image size `224x224` pixels) challenge and had millions of
+parameters. As we train on CIFAR10 (image size `32x32` pixels) we do not require
+such big models and instead define reduced versions.
+
+We will use 20% of the training set (10k images) for validation and the rest
+(40k images) for training. The models are trained for 50 epochs each with batch
+size equal to 128, i.e., a total of 15650 iterations. Training is performed
+using the PyTorch Lightning framework and the accuracy of the models is evaluated
+at the end of each epoch.
+
+!["Training Loss"](img/train_loss.png)
+!["Training Accuracy"](img/train_accuracy.png)
+
+At the end of training the models are evaluated on the held out test set. The
+final results are shown in the table below:
+
+|MODEL| VAL ACC | TEST ACC | # PARAMS |
+|-----|---------|----------|----------|
+| GoogLeNet | 0.825 | 0.817 | 306k |
+| ResNet | 0.773 | 0.772 | 282k |
+| DenseNet | 0.804 | 0.799 | 272k |
