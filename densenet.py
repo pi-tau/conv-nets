@@ -31,18 +31,25 @@ class DenseBlock(nn.Module):
         # normalization layer and a non-linear activation, utilizing the
         # so-called "pre-activation" structure.
         # See: https://arxiv.org/abs/1603.05027
+        # Note that the number of input channels grows with every layer in the
+        # dense block, while the output channels remains fixed. We use the `1x1`
+        # convolution in order to reduce the number of channels before passing
+        # through the expensive `3x3` layer.
+        # In the paper the authors state that the `1x1` convolution does not
+        # reduce the channels directly to `out_chan` but rather uses a bottleneck
+        # size of `4 x out_chan`.
         layers = []
         for _ in range(n_layers):
             layers.append(nn.Sequential(
                 PositionalNorm(in_chan),
                 nn.ReLU(),
-                nn.Conv2d(in_chan, out_chan, kernel_size=1),
-                PositionalNorm(out_chan),
+                nn.Conv2d(in_chan, 4*out_chan, kernel_size=1),
+                PositionalNorm(4*out_chan),
                 nn.ReLU(),
-                nn.Conv2d(out_chan, out_chan, kernel_size=3, padding="same"),
+                nn.Conv2d(4*out_chan, out_chan, kernel_size=3, padding="same"),
             ))
             in_chan += out_chan
-        self.layers = layers
+        self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
         out = x
@@ -132,7 +139,7 @@ DenseNet_CIFAR10 = DenseNet(
     in_shape=(3, 32, 32),
     config={
         "stem_chan": 64,
-        "modules": [(6, 16), (12, 16), (32, 16), (32, 16)],
+        "modules": [(4, 16), (4, 16), (4, 16), (4, 16)],
         "out_classes": 10,
     },
 )
