@@ -101,7 +101,6 @@ def load_CIFAR10():
 def train(model, args):
     train_loader, val_loader, test_loader = load_CIFAR10()
 
-    pl.seed_everything(args.seed)
     trainee = Trainee(model, config={"lr": args.lr, "reg": args.reg})
     trainer = pl.Trainer(
         default_root_dir=os.path.join("logs", model._get_name()),
@@ -188,6 +187,7 @@ def plot_logs_from_csv(models):
 
 
 def main(args):
+    pl.seed_everything(args.seed)
     models = [GoogLeNet_CIFAR10, ResNet_CIFAR10, DenseNet_CIFAR10]
 
     # Train the models and store the performance.
@@ -220,8 +220,6 @@ if __name__ == "__main__":
     parser.add_argument("--clip_grad", default=None, type=float)
     args = parser.parse_args()
 
-    # main(args)
-    models = [GoogLeNet_CIFAR10, ResNet_CIFAR10, DenseNet_CIFAR10]
-    plot_logs_from_csv(models)
+    main(args)
 
 #
