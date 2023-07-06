@@ -104,6 +104,9 @@ the name ResNet-18.
 
 !["ResNet-18"](img/residual_network.png)
 
+For more on the ResNet check out a
+[blog post](https://pi-tau.github.io/posts/res-nets/) I wrote on the topic.
+
 
 ## DENSENET
 The architecture of the DenseNet model is presented in:
